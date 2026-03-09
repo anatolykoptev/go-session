@@ -13,13 +13,14 @@
 
 ## Phase 2: Redis backend
 
-- [ ] `redis/` sub-package with RedisStore
-- [ ] Integration tests with testcontainers
+- [x] `redis/` sub-package with RedisStore
+- [x] Integration tests (skip if no Redis)
 
 ## Phase 3: MemDB archival bridge
 
-- [ ] `archive/memdb.go` — archive session to MemDB on cleanup
-- [ ] Configurable archive format (facts + last N messages)
+- [x] `archive/memdb.go` — archive session to MemDB on cleanup
+- [x] Configurable archive format (facts + last N messages)
+- [x] Tests with httptest mock
 
 ## Phase 4: Consumer migration
 
