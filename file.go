@@ -33,8 +33,8 @@ func NewFileStore(dir string, opts Options) Store {
 	return fs
 }
 
-func (fs *FileStore) loadAll() {
-	entries, err := os.ReadDir(fs.dir)
+func (f *FileStore) loadAll() {
+	entries, err := os.ReadDir(f.dir)
 	if err != nil {
 		return
 	}
@@ -44,7 +44,7 @@ func (fs *FileStore) loadAll() {
 			continue
 		}
 
-		data, err := os.ReadFile(filepath.Join(fs.dir, e.Name()))
+		data, err := os.ReadFile(filepath.Join(f.dir, e.Name()))
 		if err != nil {
 			continue
 		}
@@ -54,9 +54,9 @@ func (fs *FileStore) loadAll() {
 			continue // skip corrupt
 		}
 
-		fs.mu.Lock()
-		fs.sessions[sess.Key] = &sess
-		fs.mu.Unlock()
+		f.mu.Lock()
+		f.sessions[sess.Key] = &lockedSess{sess: &sess}
+		f.mu.Unlock()
 	}
 }
 
@@ -65,38 +65,39 @@ func sanitizeKey(key string) string {
 	return r.Replace(key)
 }
 
-func (fs *FileStore) filename(key string) string {
-	return filepath.Join(fs.dir, sanitizeKey(key)+".json")
+func (f *FileStore) filename(key string) string {
+	return filepath.Join(f.dir, sanitizeKey(key)+".json")
 }
 
 // Save persists a session to disk atomically.
-func (fs *FileStore) Save(key string) error {
-	fs.mu.RLock()
-	sess, ok := fs.sessions[key]
+func (f *FileStore) Save(key string) error {
+	f.mu.RLock()
+	ls, ok := f.sessions[key]
+	f.mu.RUnlock()
 	if !ok {
-		fs.mu.RUnlock()
 		return nil
 	}
 
-	data, err := json.Marshal(sess)
-	fs.mu.RUnlock()
+	ls.mu.RLock()
+	data, err := json.Marshal(ls.sess)
+	ls.mu.RUnlock()
 	if err != nil {
 		return err
 	}
 
-	tmp := fs.filename(key) + ".tmp"
+	tmp := f.filename(key) + ".tmp"
 	if err := os.WriteFile(tmp, data, filePerm); err != nil {
 		return err
 	}
-	return os.Rename(tmp, fs.filename(key))
+	return os.Rename(tmp, f.filename(key))
 }
 
 // Delete removes from memory and disk.
-func (fs *FileStore) Delete(key string) error {
-	if err := fs.InMemoryStore.Delete(key); err != nil {
+func (f *FileStore) Delete(key string) error {
+	if err := f.InMemoryStore.Delete(key); err != nil {
 		return err
 	}
-	path := fs.filename(key)
+	path := f.filename(key)
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return err
 	}

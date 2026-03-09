@@ -10,6 +10,10 @@ type Store interface {
 	// AddMessage appends a message to the session's history.
 	AddMessage(key string, msg Message)
 
+	// UpdateLastMessage replaces the content of the most recent message.
+	// Useful for streaming LLM responses: buffer chunks into the last message.
+	UpdateLastMessage(key string, content string)
+
 	// GetHistory returns an ordered copy of the session's messages.
 	GetHistory(key string) []Message
 

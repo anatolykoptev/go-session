@@ -13,26 +13,31 @@ import (
 )
 
 const (
-	defaultPrefix = "session:"
-	scanPageSize  = 100
+	defaultPrefix       = "session:"
+	scanPageSize        = 100
+	contentTruncSuffix  = "\n... [truncated]"
 )
 
 // Store is a Redis-backed implementation of session.Store.
 // Each session is stored as a JSON blob under "<prefix><key>".
 // All writes refresh the Redis TTL. Save is a no-op.
 type Store struct {
-	client  *redis.Client
-	prefix  string
-	ttl     time.Duration
-	maxMsgs int
-	mu      sync.Mutex // guards read-modify-write cycles
+	client     *redis.Client
+	prefix     string
+	ttl        time.Duration
+	maxMsgs    int
+	maxContent int
+	maxFacts   int
+	mu         sync.Mutex // guards read-modify-write cycles
 }
 
 // Options configures the Redis store.
 type Options struct {
-	Prefix      string        // Redis key prefix (default: "session:")
-	TTL         time.Duration // applied on every write; 0 = no expiry
-	MaxMessages int           // max history length on AddMessage; 0 = unlimited
+	Prefix         string        // Redis key prefix (default: "session:")
+	TTL            time.Duration // applied on every write; 0 = no expiry
+	MaxMessages    int           // max history length on AddMessage; 0 = unlimited
+	MaxContentSize int           // truncate message content beyond this byte length; 0 = unlimited
+	MaxFacts       int           // rotate oldest facts when exceeded; 0 = unlimited
 }
 
 // New creates a Store backed by the given client.
@@ -41,7 +46,14 @@ func New(client *redis.Client, opts Options) *Store {
 	if prefix == "" {
 		prefix = defaultPrefix
 	}
-	return &Store{client: client, prefix: prefix, ttl: opts.TTL, maxMsgs: opts.MaxMessages}
+	return &Store{
+		client:     client,
+		prefix:     prefix,
+		ttl:        opts.TTL,
+		maxMsgs:    opts.MaxMessages,
+		maxContent: opts.MaxContentSize,
+		maxFacts:   opts.MaxFacts,
+	}
 }
 
 func (s *Store) redisKey(key string) string { return s.prefix + key }
@@ -83,6 +95,18 @@ func (s *Store) modify(key string, fn func(*session.Session)) {
 	_ = s.persist(ctx, sess) //nolint:errcheck // best-effort persistence
 }
 
+func (s *Store) truncateContent(msg *session.Message) {
+	if s.maxContent > 0 && len(msg.Content) > s.maxContent {
+		msg.Content = msg.Content[:s.maxContent] + contentTruncSuffix
+	}
+}
+
+func (s *Store) enforceFacts(sess *session.Session) {
+	if s.maxFacts > 0 && len(sess.Facts) > s.maxFacts {
+		sess.Facts = sess.Facts[len(sess.Facts)-s.maxFacts:]
+	}
+}
+
 // GetOrCreate returns an existing session or creates a new one.
 func (s *Store) GetOrCreate(key string) *session.Session {
 	sess, err := s.load(context.Background(), key)
@@ -92,13 +116,28 @@ func (s *Store) GetOrCreate(key string) *session.Session {
 	return sess
 }
 
-// AddMessage appends a message, enforcing MaxMessages if set.
+// AddMessage appends a message, enforcing MaxMessages and MaxContentSize.
 func (s *Store) AddMessage(key string, msg session.Message) {
+	s.truncateContent(&msg)
 	s.modify(key, func(sess *session.Session) {
 		sess.AddMessage(msg)
 		if s.maxMsgs > 0 && len(sess.Messages) > s.maxMsgs {
 			sess.Messages = sess.Messages[len(sess.Messages)-s.maxMsgs:]
 		}
+	})
+}
+
+// UpdateLastMessage replaces the content of the most recent message.
+func (s *Store) UpdateLastMessage(key string, content string) {
+	if s.maxContent > 0 && len(content) > s.maxContent {
+		content = content[:s.maxContent] + contentTruncSuffix
+	}
+	s.modify(key, func(sess *session.Session) {
+		if len(sess.Messages) == 0 {
+			return
+		}
+		sess.Messages[len(sess.Messages)-1].Content = content
+		sess.Updated = time.Now()
 	})
 }
 
@@ -139,9 +178,12 @@ func (s *Store) GetFacts(key string) []session.Fact {
 	return sess.GetFacts()
 }
 
-// AddFacts appends new facts to a session.
+// AddFacts appends new facts to a session, enforcing MaxFacts.
 func (s *Store) AddFacts(key string, facts []session.Fact) {
-	s.modify(key, func(sess *session.Session) { sess.AddFacts(facts) })
+	s.modify(key, func(sess *session.Session) {
+		sess.AddFacts(facts)
+		s.enforceFacts(sess)
+	})
 }
 
 // MessageCount returns the number of messages in a session.

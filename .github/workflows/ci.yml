@@ -3,7 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
+
+env:
+  GOWORK: "off"
 
 jobs:
   lint:
@@ -24,7 +28,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go test -race -coverprofile=coverage.txt ./...
+      - name: Test root module
+        run: go test -race -coverprofile=coverage.txt ./...
+      - name: Test redis sub-module
+        run: cd redis && go test -race ./...
+      - name: Test archive sub-module
+        run: cd archive && go test -race ./...
       - uses: codecov/codecov-action@v4
         with:
           file: coverage.txt

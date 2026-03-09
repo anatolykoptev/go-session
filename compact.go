@@ -10,6 +10,8 @@ import (
 // SummarizeFn is called by the compactor to get an LLM summary.
 type SummarizeFn func(ctx context.Context, prompt string) (string, error)
 
+const defaultMultiPartMin = 10
+
 // Compactor manages session compaction.
 type Compactor struct {
 	Store          Store
@@ -18,6 +20,7 @@ type Compactor struct {
 	KeepLast       int  // messages to retain
 	ExtractFacts   bool // true = parse "- " bullets as facts
 	MultiPart      bool // split large histories before summarizing
+	MultiPartMin   int  // minimum messages for multi-part split (default: 10)
 	MaxTokensGuard int  // skip messages with len(Content)/4 > this
 }
 
@@ -37,7 +40,11 @@ func (c *Compactor) Compact(ctx context.Context, key string) {
 	var result string
 	var err error
 
-	if c.MultiPart && len(removed) > 10 {
+	minPart := c.MultiPartMin
+	if minPart <= 0 {
+		minPart = defaultMultiPartMin
+	}
+	if c.MultiPart && len(removed) > minPart {
 		result, err = c.multiPartSummarize(ctx, key, removed)
 	} else {
 		result, err = c.Summarize(ctx, prompt)
