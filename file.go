@@ -2,9 +2,15 @@ package session
 
 import (
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+)
+
+const (
+	dirPerm  fs.FileMode = 0750
+	filePerm fs.FileMode = 0600
 )
 
 // FileStore wraps InMemoryStore with JSON file persistence.
@@ -15,7 +21,7 @@ type FileStore struct {
 
 // NewFileStore creates a file-backed store, loading existing sessions.
 func NewFileStore(dir string, opts Options) Store {
-	if err := os.MkdirAll(dir, 0750); err != nil {
+	if err := os.MkdirAll(dir, dirPerm); err != nil {
 		panic("go-session: cannot create dir: " + err.Error())
 	}
 
@@ -79,7 +85,7 @@ func (fs *FileStore) Save(key string) error {
 	}
 
 	tmp := fs.filename(key) + ".tmp"
-	if err := os.WriteFile(tmp, data, 0600); err != nil {
+	if err := os.WriteFile(tmp, data, filePerm); err != nil {
 		return err
 	}
 	return os.Rename(tmp, fs.filename(key))

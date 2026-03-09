@@ -21,7 +21,7 @@ func mockSummarizeErr(errMsg string) SummarizeFn {
 
 func TestCompactor_TriggersAtThreshold(t *testing.T) {
 	store := NewInMemoryStore(Options{})
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		store.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 
@@ -50,7 +50,7 @@ func TestCompactor_TriggersAtThreshold(t *testing.T) {
 
 func TestCompactor_NoopUnderThreshold(t *testing.T) {
 	store := NewInMemoryStore(Options{})
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		store.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 
@@ -76,7 +76,7 @@ func TestCompactor_NoopUnderThreshold(t *testing.T) {
 
 func TestCompactor_SummaryMode(t *testing.T) {
 	store := NewInMemoryStore(Options{})
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		store.AddMessage("k1", Message{Role: "user", Content: "test message"})
 	}
 
@@ -103,7 +103,7 @@ func TestCompactor_SummaryMode(t *testing.T) {
 
 func TestCompactor_FactExtraction(t *testing.T) {
 	store := NewInMemoryStore(Options{})
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		store.AddMessage("k1", Message{Role: "user", Content: "test message"})
 	}
 
@@ -112,7 +112,7 @@ func TestCompactor_FactExtraction(t *testing.T) {
 		Threshold:    10,
 		KeepLast:     5,
 		ExtractFacts: true,
-		Summarize: mockSummarize("- User prefers dark mode\n- Deployment uses docker\n- API key rotated weekly"),
+		Summarize:    mockSummarize("- User prefers dark mode\n- Deployment uses docker\n- API key rotated weekly"),
 	}
 
 	c.Compact(context.Background(), "k1")
@@ -128,7 +128,7 @@ func TestCompactor_FactExtraction(t *testing.T) {
 
 func TestCompactor_FactExtraction_MalformedOutput(t *testing.T) {
 	store := NewInMemoryStore(Options{})
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		store.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 
@@ -155,7 +155,7 @@ func TestCompactor_FactExtraction_MalformedOutput(t *testing.T) {
 
 func TestCompactor_MultiPart(t *testing.T) {
 	store := NewInMemoryStore(Options{})
-	for i := 0; i < 30; i++ {
+	for range 30 {
 		store.AddMessage("k1", Message{Role: "user", Content: "message content here"})
 	}
 
@@ -183,7 +183,7 @@ func TestCompactor_OversizedMessageGuard(t *testing.T) {
 	store := NewInMemoryStore(Options{})
 	// Add a huge message.
 	store.AddMessage("k1", Message{Role: "user", Content: strings.Repeat("x", 50000)})
-	for i := 0; i < 15; i++ {
+	for range 15 {
 		store.AddMessage("k1", Message{Role: "user", Content: "normal"})
 	}
 
@@ -209,7 +209,7 @@ func TestCompactor_OversizedMessageGuard(t *testing.T) {
 
 func TestCompactor_SummarizeFnError(t *testing.T) {
 	store := NewInMemoryStore(Options{})
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		store.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 
@@ -234,7 +234,7 @@ func TestCompactor_ExistingSummaryInPrompt(t *testing.T) {
 	store := NewInMemoryStore(Options{})
 	store.GetOrCreate("k1")
 	store.SetSummary("k1", "previous context about nginx")
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		store.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 
@@ -260,7 +260,7 @@ func TestCompactor_ExistingFactsPreserved(t *testing.T) {
 	store := NewInMemoryStore(Options{})
 	store.GetOrCreate("k1")
 	store.AddFacts("k1", []Fact{{Content: "old fact"}})
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		store.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 

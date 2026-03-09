@@ -101,7 +101,7 @@ func TestInMemoryStore_MessageCount(t *testing.T) {
 
 func TestInMemoryStore_CompactMessages(t *testing.T) {
 	s := NewInMemoryStore(Options{})
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		s.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 
@@ -116,7 +116,7 @@ func TestInMemoryStore_CompactMessages(t *testing.T) {
 
 func TestInMemoryStore_TruncateHistory(t *testing.T) {
 	s := NewInMemoryStore(Options{})
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		s.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 	s.TruncateHistory("k1", 2)
@@ -188,7 +188,7 @@ func TestInMemoryStore_TTL(t *testing.T) {
 
 func TestInMemoryStore_MaxMessages(t *testing.T) {
 	s := NewInMemoryStore(Options{MaxMessages: 3})
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		s.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 	if s.MessageCount("k1") != 3 {
@@ -199,12 +199,10 @@ func TestInMemoryStore_MaxMessages(t *testing.T) {
 func TestInMemoryStore_ConcurrentAddMessage(t *testing.T) {
 	s := NewInMemoryStore(Options{})
 	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 100 {
+		wg.Go(func() {
 			s.AddMessage("k1", Message{Role: "user", Content: "msg"})
-		}()
+		})
 	}
 	wg.Wait()
 	if s.MessageCount("k1") != 100 {
@@ -217,21 +215,17 @@ func TestInMemoryStore_ConcurrentGetHistoryDuringWrites(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Writer goroutines.
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 50 {
+		wg.Go(func() {
 			s.AddMessage("k1", Message{Role: "user", Content: "msg"})
-		}()
+		})
 	}
 
 	// Reader goroutines.
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 50 {
+		wg.Go(func() {
 			_ = s.GetHistory("k1")
-		}()
+		})
 	}
 
 	wg.Wait()

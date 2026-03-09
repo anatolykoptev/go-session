@@ -86,7 +86,7 @@ func (c *Compactor) buildPrompt(key string, msgs []Message) string {
 func (c *Compactor) multiPartSummarize(
 	ctx context.Context, key string, removed []Message,
 ) (string, error) {
-	mid := len(removed) / 2
+	mid := len(removed) / 2 //nolint:mnd // split in half
 	first := removed[:mid]
 	second := removed[mid:]
 
@@ -134,10 +134,9 @@ func parseFacts(text string) []Fact {
 	var facts []Fact
 	now := time.Now()
 
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "- ") {
-			content := strings.TrimPrefix(line, "- ")
+		if content, ok := strings.CutPrefix(line, "- "); ok {
 			content = strings.TrimSpace(content)
 			if content != "" {
 				facts = append(facts, Fact{

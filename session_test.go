@@ -55,7 +55,7 @@ func TestSession_MessageCount(t *testing.T) {
 
 func TestSession_CompactMessages(t *testing.T) {
 	s := NewSession("k")
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		s.AddMessage(Message{Role: "user", Content: "msg"})
 	}
 
@@ -83,7 +83,7 @@ func TestSession_CompactMessages_UnderKeep(t *testing.T) {
 
 func TestSession_TruncateHistory(t *testing.T) {
 	s := NewSession("k")
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		s.AddMessage(Message{Role: "user", Content: "msg"})
 	}
 	s.TruncateHistory(3)

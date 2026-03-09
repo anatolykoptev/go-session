@@ -141,17 +141,15 @@ func TestFileStore_ConcurrentSave(t *testing.T) {
 	dir := t.TempDir()
 	s := NewFileStore(dir, Options{})
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		s.AddMessage("k1", Message{Role: "user", Content: "msg"})
 	}
 
 	var wg sync.WaitGroup
-	for i := 0; i < 20; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 20 {
+		wg.Go(func() {
 			_ = s.Save("k1")
-		}()
+		})
 	}
 	wg.Wait()
 
