@@ -14,9 +14,9 @@ var forceKeywords = []string{
 
 // Skip prefixes for greetings and short replies.
 var skipPrefixes = []string{
-	"привет", "здравствуй", "добрый", "hi", "hello", "hey",
-	"спасибо", "thanks", "ok", "ок", "да", "нет", "yes", "no",
-	"пока", "bye", "good",
+	"привет", "здравствуй", "добрый", "доброе", "hi", "hello", "hey",
+	"спасибо", "thanks", "thank you", "ok", "ок", "да", "нет", "yes", "no",
+	"пока", "bye", "good", "до свидания", "до встречи",
 }
 
 const (
@@ -39,10 +39,14 @@ func NeedsMemoryContext(text string) bool {
 		}
 	}
 
+	// Strip trailing punctuation for matching.
+	cleaned := strings.TrimRight(lower, "!?.,;:")
+
 	runeCount := utf8.RuneCountInString(lower)
 	if runeCount < skipMaxRuneCount {
 		for _, prefix := range skipPrefixes {
-			if lower == prefix || strings.HasPrefix(lower, prefix+" ") {
+			if cleaned == prefix || strings.HasPrefix(cleaned, prefix+" ") ||
+				strings.HasPrefix(lower, prefix+" ") || strings.HasPrefix(lower, prefix+",") {
 				return false
 			}
 		}

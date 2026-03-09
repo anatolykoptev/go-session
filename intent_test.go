@@ -31,6 +31,15 @@ func TestNeedsMemoryContext(t *testing.T) {
 		{"mixed_force_skip", "привет помнишь наш разговор?", true},
 		{"command", "/status", true},
 		{"numbers", "12345", true},
+		{"greeting_ru_excl", "Привет!", false},
+		{"greeting_ru_comma", "Привет, как дела?", false},
+		{"greeting_morning_ru", "Доброе утро!", false},
+		{"thanks_ru_excl", "Спасибо!", false},
+		{"thanks_en_lot", "Thanks a lot", false},
+		{"thank_you_en", "Thank you for helping", false},
+		{"farewell_ru", "до свидания", false},
+		{"farewell_ru_excl", "До встречи!", false},
+		{"hello_there", "Hello there", false},
 	}
 
 	for _, tt := range tests {
