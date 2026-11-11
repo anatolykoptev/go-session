@@ -59,13 +59,10 @@ func TestFileStore_LoadSkipsCorrupt(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "bad.json"), []byte("{corrupt"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	// Write valid session.
-	validStore := NewFileStore(t.TempDir(), Options{})
+	// Write a valid session into the same directory.
+	validStore := NewFileStore(dir, Options{})
 	validStore.AddMessage("good", Message{Role: "user", Content: "ok"})
 	_ = validStore.Save("good")
-	// Copy valid file.
-	data, _ := os.ReadFile(filepath.Join(validStore.(*FileStore).dir, "good.json"))
-	_ = os.WriteFile(filepath.Join(dir, "good.json"), data, 0600)
 
 	s := NewFileStore(dir, Options{})
 	if s.GetHistory("good") == nil {
