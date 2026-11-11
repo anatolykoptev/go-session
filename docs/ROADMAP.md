@@ -24,7 +24,7 @@
 
 ## Phase 4: Consumer migration
 
-- [x] go-hully: replaced `internal/session/` with go-session adapter
+- [x] a content-posting service: replaced `internal/session/` with go-session adapter
 - [x] dozor: replaced `internal/agent/session_store.go` + `compaction.go`
 - [x] vaelor: replaced `pkg/session/manager.go` + intent filter + cleanup
 - [ ] picoclaw: replace `pkg/session/manager.go`
