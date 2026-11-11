@@ -3,7 +3,7 @@
 ## Purpose
 
 Shared Go library for per-key conversation session management across AI agent projects.
-Replaces duplicated session stores in vaelor, dozor, go-hully, and picoclaw.
+Replaces duplicated session stores in vaelor, dozor, and picoclaw.
 
 ## Design Principles
 
@@ -184,5 +184,4 @@ Session expires → ListStale(maxAge) → archiveFn(session) → Delete()
 |---------|---------|------------------------|
 | dozor | `internal/agent/session_store.go` | FileStore + Compactor |
 | vaelor | `pkg/session/manager.go` | FileStore + Compactor(facts) |
-| go-hully | `internal/session/{store,redis}.go` | InMemoryStore or RedisStore |
 | picoclaw | `pkg/session/manager.go` | FileStore + Compactor(multipart) |
